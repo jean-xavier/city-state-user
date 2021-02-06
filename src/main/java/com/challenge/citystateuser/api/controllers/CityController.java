@@ -7,6 +7,8 @@ import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
+
 @RestController
 @RequestMapping("api/cities")
 public class CityController {
@@ -21,7 +23,7 @@ public class CityController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public CityDTO create(@RequestBody CityDTO cityDTO) {
+    public CityDTO create(@RequestBody @Valid CityDTO cityDTO) {
         City city = modelMapper.map(cityDTO, City.class);
 
         city = cityService.save(city);
