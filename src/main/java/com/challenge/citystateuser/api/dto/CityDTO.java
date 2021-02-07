@@ -17,5 +17,5 @@ public class CityDTO {
     private String name;
 
     @NotNull(message = "Id do estado é obrigatório")
-    private Long idState;
+    private StateDTO state;
 }
