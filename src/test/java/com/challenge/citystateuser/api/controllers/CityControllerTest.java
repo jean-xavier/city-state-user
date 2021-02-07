@@ -1,7 +1,9 @@
 package com.challenge.citystateuser.api.controllers;
 
 import com.challenge.citystateuser.api.dto.CityDTO;
+import com.challenge.citystateuser.api.dto.StateDTO;
 import com.challenge.citystateuser.domain.models.entities.City;
+import com.challenge.citystateuser.domain.models.entities.State;
 import com.challenge.citystateuser.domain.services.CityService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
@@ -42,8 +44,8 @@ public class CityControllerTest {
     @Test
     @DisplayName("Deve criar uma cidade com sucesso.")
     public void createCityTest() throws Exception {
-        CityDTO cityDTO = CityDTO.builder().name("Salvador").idState(1L).build();
-        City city = City.builder().id(1L).name("Salvador").idState(1L).build();
+        CityDTO cityDTO = CityDTO.builder().name("Salvador").state(StateDTO.builder().id(1L).build()).build();
+        City city = City.builder().id(1L).name("Salvador").state(State.builder().id(1L).build()).build();
 
         BDDMockito.given(cityService.save(Mockito.any(City.class))).willReturn(city);
 
@@ -72,7 +74,7 @@ public class CityControllerTest {
     @Test
     @DisplayName("Deve retornar uma cidade pelo nome")
     public void searchCityByNameTest() throws Exception {
-        City city = City.builder().id(1L).name("Salvador").idState(1L).build();
+        City city = City.builder().id(1L).name("Salvador").state(State.builder().id(1L).build()).build();
 
         BDDMockito.when(cityService.findByName(city.getName())).thenReturn(Optional.of(city));
 
@@ -89,7 +91,7 @@ public class CityControllerTest {
     @Test
     @DisplayName("Deve lançar erro quando procurar uma cidade inexistente")
     public void searchInvalidCityByNameTest() throws Exception {
-        City city = City.builder().id(1L).name("Salvador").idState(1L).build();
+        City city = City.builder().id(1L).name("Salvador").state(State.builder().id(1L).build()).build();
 
         BDDMockito.when(cityService.findByName(city.getName())).thenReturn(Optional.empty());
 
