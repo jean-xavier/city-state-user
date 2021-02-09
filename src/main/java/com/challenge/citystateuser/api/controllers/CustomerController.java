@@ -1,6 +1,7 @@
 package com.challenge.citystateuser.api.controllers;
 
 import com.challenge.citystateuser.api.dto.CustomerDTO;
+import com.challenge.citystateuser.api.dto.CustomerUpdateDTO;
 import com.challenge.citystateuser.domain.models.entities.Customer;
 import com.challenge.citystateuser.domain.services.CustomerService;
 import org.modelmapper.ModelMapper;
@@ -8,7 +9,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import javax.persistence.EntityNotFoundException;
 import javax.validation.Valid;
 
 @RestController
@@ -46,6 +46,15 @@ public class CustomerController {
     public CustomerDTO searchById(@PathVariable Long id) {
         return customerService.findById(id)
                 .map(customer -> modelMapper.map(customer, CustomerDTO.class))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("Not found user with id '%s'.", id)));
+    }
+
+    @PatchMapping("/{id}")
+    public CustomerDTO update(@PathVariable Long id, @RequestBody @Valid CustomerUpdateDTO dto) {
+        final Customer customer = Customer.builder().id(id).fullname(dto.getFullname()).build();
+
+        return customerService.update(customer)
+                .map(customer1 -> modelMapper.map(customer1, CustomerDTO.class))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("Not found user with id '%s'.", id)));
     }
 }
