@@ -32,4 +32,12 @@ public class CustomerController {
 
         return modelMapper.map(customer, CustomerDTO.class);
     }
+
+    @GetMapping
+    @ResponseStatus(HttpStatus.FOUND)
+    public CustomerDTO searchByName(@RequestParam("name") String name) {
+        return customerService.searchByName(name)
+                .map(customer -> modelMapper.map(customer, CustomerDTO.class))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("Not found user with name '%s'.", name)));
+    }
 }
