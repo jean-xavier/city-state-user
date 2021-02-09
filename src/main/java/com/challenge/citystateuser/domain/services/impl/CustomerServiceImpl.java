@@ -22,4 +22,9 @@ public class CustomerServiceImpl implements CustomerService {
     public Optional<Customer> findById(Long id) {
         return Optional.empty();
     }
+
+    @Override
+    public Optional<Customer> update(Customer customer) {
+        return null;
+    }
 }
