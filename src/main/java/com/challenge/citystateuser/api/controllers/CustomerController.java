@@ -40,4 +40,12 @@ public class CustomerController {
                 .map(customer -> modelMapper.map(customer, CustomerDTO.class))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("Not found user with name '%s'.", name)));
     }
+
+    @GetMapping("/{id}")
+    @ResponseStatus(HttpStatus.FOUND)
+    public CustomerDTO searchById(@PathVariable Long id) {
+        return customerService.findById(id)
+                .map(customer -> modelMapper.map(customer, CustomerDTO.class))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("Not found user with id '%s'.", id)));
+    }
 }
