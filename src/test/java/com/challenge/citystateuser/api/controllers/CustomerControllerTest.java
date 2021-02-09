@@ -2,6 +2,7 @@ package com.challenge.citystateuser.api.controllers;
 
 import com.challenge.citystateuser.api.dto.CityDTO;
 import com.challenge.citystateuser.api.dto.CustomerDTO;
+import com.challenge.citystateuser.api.dto.CustomerUpdateDTO;
 import com.challenge.citystateuser.api.dto.StateDTO;
 import com.challenge.citystateuser.domain.models.entities.City;
 import com.challenge.citystateuser.domain.models.entities.Customer;
@@ -147,6 +148,44 @@ public class CustomerControllerTest {
                 .andExpect(status().isNotFound());
     }
 
+    @Test
+    @DisplayName("Deve alterar nome do cliente")
+    public void updateUserNameTest() throws Exception {
+        final Long id = 1L;
+
+        final Customer customer = makeNewCustomer();
+        customer.setFullname("João Santos");
+
+        final CustomerUpdateDTO customerUpdateDTO = CustomerUpdateDTO.builder().fullname("João Santos").build();
+
+        final String json = new ObjectMapper().writeValueAsString(customerUpdateDTO);
+
+        BDDMockito.when(customerService.update(Mockito.any(Customer.class))).thenReturn(Optional.of(customer));
+
+        MockHttpServletRequestBuilder request = makePatchMockHttpServletRequestBuilder(id, json);
+
+        mvc.perform(request)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("fullname").value(customer.getFullname()));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 404 ao tentar alterar o nome de um cliente inexistente")
+    public void updateInvalidUserNameTest() throws Exception {
+        final Long id = 5L;
+
+        final CustomerUpdateDTO customerUpdateDTO = CustomerUpdateDTO.builder().fullname("João Santos").build();
+
+        final String json = new ObjectMapper().writeValueAsString(customerUpdateDTO);
+
+        BDDMockito.when(customerService.update(Mockito.any(Customer.class))).thenReturn(Optional.empty());
+
+        MockHttpServletRequestBuilder request = makePatchMockHttpServletRequestBuilder(id, json);
+
+        mvc.perform(request)
+                .andExpect(status().isNotFound());
+    }
+
     private MockHttpServletRequestBuilder makePostMockHttpServletRequestBuilder(String json) {
         return MockMvcRequestBuilders
                 .post(CUSTOMER_API)
@@ -159,6 +198,14 @@ public class CustomerControllerTest {
         return MockMvcRequestBuilders
                 .get(CUSTOMER_API + query)
                 .accept(MediaType.APPLICATION_JSON);
+    }
+
+    private MockHttpServletRequestBuilder makePatchMockHttpServletRequestBuilder(Long resource, String json) {
+        return MockMvcRequestBuilders
+                .patch(CUSTOMER_API.concat("/" + resource))
+                .accept(MediaType.APPLICATION_JSON)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json);
     }
 
     private CustomerDTO makeNewCustomerDTO() {
