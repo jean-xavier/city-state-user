@@ -186,6 +186,38 @@ public class CustomerControllerTest {
                 .andExpect(status().isNotFound());
     }
 
+    @Test
+    @DisplayName("Deve deletar um usuário com sucesso")
+    public void delUserByIdTest() throws Exception {
+        final Long id = 1L;
+
+        Customer customer = makeNewCustomer();
+
+        BDDMockito.given(customerService.findById(id)).willReturn(Optional.of(customer));
+
+        MockHttpServletRequestBuilder request = MockMvcRequestBuilders
+                .delete(CUSTOMER_API.concat("/" + id));
+
+        mvc.perform(request).andExpect(status().isNoContent());
+
+        BDDMockito.verify(customerService, Mockito.times(1)).delete(Mockito.any(Customer.class));
+    }
+
+    @Test
+    @DisplayName("Deve lançar 404 quando tentar exlcuir um usuário inexistente")
+    public void delInvalidUserByIdTest() throws Exception {
+        final Long id = 1L;
+
+        BDDMockito.given(customerService.findById(id)).willReturn(Optional.empty());
+
+        MockHttpServletRequestBuilder request = MockMvcRequestBuilders
+                .delete(CUSTOMER_API.concat("/" + id));
+
+        mvc.perform(request).andExpect(status().isNotFound());
+
+        BDDMockito.verify(customerService, Mockito.never()).delete(Mockito.any(Customer.class));
+    }
+
     private MockHttpServletRequestBuilder makePostMockHttpServletRequestBuilder(String json) {
         return MockMvcRequestBuilders
                 .post(CUSTOMER_API)
