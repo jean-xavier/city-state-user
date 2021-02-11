@@ -14,4 +14,6 @@ public interface CustomerService {
     Optional<Customer> findById(Long id);
 
     Optional<Customer> update(Customer customer);
+
+    void delete(Customer customer);
 }

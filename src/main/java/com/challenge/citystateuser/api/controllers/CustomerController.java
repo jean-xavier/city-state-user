@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import javax.validation.Valid;
+import java.util.Optional;
+import java.util.function.Function;
 
 @RestController
 @RequestMapping("/api/customers")
@@ -56,5 +58,17 @@ public class CustomerController {
         return customerService.update(customer)
                 .map(customer1 -> modelMapper.map(customer1, CustomerDTO.class))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("Not found user with id '%s'.", id)));
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable Long id) {
+        Optional<Customer> customer = customerService.findById(id);
+
+        if (customer.isPresent()) {
+            customerService.delete(customer.get());
+        } else {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found" );
+        }
     }
 }
