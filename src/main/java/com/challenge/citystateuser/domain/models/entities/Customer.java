@@ -24,4 +24,8 @@ public class Customer {
     @ManyToOne
     private City cityLive;
 
+    public void setBirthDate(String birthDate) {
+        this.birthDate = LocalDate.parse(birthDate);
+    }
+
 }
