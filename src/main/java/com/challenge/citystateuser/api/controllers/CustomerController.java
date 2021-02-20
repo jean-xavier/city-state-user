@@ -54,7 +54,6 @@ public class CustomerController {
     }
 
     @GetMapping("/{id}")
-    @ResponseStatus(HttpStatus.FOUND)
     public CustomerDTO searchById(@PathVariable Long id) {
         return customerService.findById(id)
                 .map(customer -> modelMapper.map(customer, CustomerDTO.class))
