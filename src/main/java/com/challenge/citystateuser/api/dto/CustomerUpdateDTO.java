@@ -10,6 +10,6 @@ import javax.validation.constraints.NotBlank;
 @AllArgsConstructor
 @Builder
 public class CustomerUpdateDTO {
-    @NotBlank
+    @NotBlank(message = "Fullname can't be blank")
     private String fullname;
 }

@@ -13,9 +13,9 @@ import javax.validation.constraints.NotNull;
 public class CityDTO {
     private Long id;
 
-    @NotBlank(message = "Nome é obrigatório")
+    @NotBlank(message = "Name can't be blank")
     private String name;
 
-    @NotNull(message = "Id do estado é obrigatório")
+    @NotNull(message = "State can't be null")
     private StateDTO state;
 }

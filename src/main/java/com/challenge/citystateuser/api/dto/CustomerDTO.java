@@ -14,19 +14,19 @@ import java.time.LocalDate;
 public class CustomerDTO {
     private Long id;
 
-    @NotBlank
+    @NotBlank(message = "Fullname can't be blank")
     private String fullname;
 
-    @NotBlank
+    @NotBlank(message = "Gender can't be blank")
     private String gender;
 
-    @NotNull
+    @NotBlank(message = "Birth Date can't be blank")
     private String birthDate;
 
-    @NotNull
+    @NotNull(message = "Age can't be null")
     private Integer age;
 
-    @NotNull
+    @NotNull(message = "City Live can't be null")
     private CityDTO cityLive;
 
 }
