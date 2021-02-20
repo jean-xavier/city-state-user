@@ -4,6 +4,9 @@ import com.challenge.citystateuser.api.dto.CityDTO;
 import com.challenge.citystateuser.api.dto.StateDTO;
 import com.challenge.citystateuser.domain.models.entities.City;
 import com.challenge.citystateuser.domain.models.entities.State;
+import com.challenge.citystateuser.domain.models.repositories.CityRepository;
+import com.challenge.citystateuser.domain.models.repositories.CustomerRepository;
+import com.challenge.citystateuser.domain.models.repositories.StateRespository;
 import com.challenge.citystateuser.domain.services.CityService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
@@ -11,10 +14,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.Mockito;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -22,7 +29,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
-import java.util.Optional;
+import java.util.Collections;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -40,6 +47,15 @@ public class CityControllerTest {
 
     @MockBean
     CityService cityService;
+
+    @MockBean
+    CustomerRepository customerRepository;
+
+    @MockBean
+    StateRespository stateRespository;
+
+    @MockBean
+    CityRepository cityRepository;
 
     @Test
     @DisplayName("Deve criar uma cidade com sucesso.")
@@ -74,32 +90,42 @@ public class CityControllerTest {
     @Test
     @DisplayName("Deve retornar uma cidade pelo nome")
     public void searchCityByNameTest() throws Exception {
-        City city = City.builder().id(1L).name("Salvador").state(State.builder().id(1L).build()).build();
+        final String filter = "Salvador";
+        final City city = City.builder().name(filter).build();
 
-        BDDMockito.when(cityService.findByName(city.getName())).thenReturn(Optional.of(city));
+        BDDMockito.when(cityService.findByName(Mockito.any(City.class), Mockito.any(Pageable.class)))
+                .thenReturn(new PageImpl<>(Collections.singletonList(city), PageRequest.of(0, 100), 1));
 
-        final String query = String.format("?name=%s", city.getName());
+        final String query = String.format("?city=%s&page=0&size=100", city.getName());
 
         MockHttpServletRequestBuilder request = makeGetMockHttpServletRequestBuilder(query);
 
         mvc.perform(request)
-                .andExpect(status().isFound())
-                .andExpect(jsonPath("id").value(1L))
-                .andExpect(jsonPath("name").value(city.getName()));
+                .andExpect(status().isOk())
+                .andExpect( jsonPath("content", hasSize(1)) )
+                .andExpect( jsonPath("totalElements").value(1) )
+                .andExpect( jsonPath( "pageable.pageSize" ).value(100) )
+                .andExpect( jsonPath( "pageable.pageNumber" ).value(0) );
     }
 
     @Test
-    @DisplayName("Deve lançar erro quando procurar uma cidade inexistente")
+    @DisplayName("Deve retornar 0 elementos quando procurar uma cidade inexistente")
     public void searchInvalidCityByNameTest() throws Exception {
-        City city = City.builder().id(1L).name("Salvador").state(State.builder().id(1L).build()).build();
+        final String filter = "Salvador";
 
-        BDDMockito.when(cityService.findByName(city.getName())).thenReturn(Optional.empty());
+        BDDMockito.when(cityService.findByName(Mockito.any(City.class), Mockito.any(Pageable.class)))
+                .thenReturn(new PageImpl<City>(Collections.emptyList(), PageRequest.of(0,100), 0));
 
-        final String query = String.format("?name=%s", city.getName());
+        final String query = String.format("?city=%s&page=0&size=100", filter);
 
         MockHttpServletRequestBuilder request = makeGetMockHttpServletRequestBuilder(query);
 
-        mvc.perform(request).andExpect(status().isNotFound());
+        mvc.perform(request)
+                .andExpect(status().isOk())
+                .andExpect( jsonPath("content", hasSize(0)) )
+                .andExpect( jsonPath("totalElements").value(0) )
+                .andExpect( jsonPath( "pageable.pageSize" ).value(100) )
+                .andExpect( jsonPath( "pageable.pageNumber" ).value(0) );
     }
 
     private MockHttpServletRequestBuilder makePostMockHttpServletRequestBuilder(String json) {

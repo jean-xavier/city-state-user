@@ -7,6 +7,9 @@ import com.challenge.citystateuser.api.dto.StateDTO;
 import com.challenge.citystateuser.domain.models.entities.City;
 import com.challenge.citystateuser.domain.models.entities.Customer;
 import com.challenge.citystateuser.domain.models.entities.State;
+import com.challenge.citystateuser.domain.models.repositories.CityRepository;
+import com.challenge.citystateuser.domain.models.repositories.CustomerRepository;
+import com.challenge.citystateuser.domain.models.repositories.StateRespository;
 import com.challenge.citystateuser.domain.services.CustomerService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
@@ -18,6 +21,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -26,6 +32,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.Optional;
 
 import static org.hamcrest.Matchers.hasSize;
@@ -44,6 +51,16 @@ public class CustomerControllerTest {
 
     @MockBean
     CustomerService customerService;
+
+    @MockBean
+    CustomerRepository customerRepository;
+
+    @MockBean
+    CityRepository cityRepository;
+
+    @MockBean
+    StateRespository stateRespository;
+
 
     @Test
     @DisplayName("Deve criar um novo cliente com sucesso.")
@@ -85,35 +102,39 @@ public class CustomerControllerTest {
     public void searchUserByNameTest() throws Exception {
         final Customer customer = makeNewCustomer();
 
-        BDDMockito.when(customerService.searchByName(customer.getFullname())).thenReturn(Optional.of(customer));
+        BDDMockito.when(customerService.searchByName(Mockito.any(Customer.class), Mockito.any(Pageable.class)))
+                .thenReturn(new PageImpl<Customer>(Collections.singletonList(customer), PageRequest.of(0,100), 1));
 
-        final String query = String.format("?name=%s", customer.getFullname());
+        final String query = String.format("?name=%s&page=0&size=100", customer.getFullname());
 
         MockHttpServletRequestBuilder request = makeGetMockHttpServletRequestBuilder(query);
 
         mvc.perform(request)
-                .andExpect(status().isFound())
-                .andExpect(jsonPath("id").value(1L))
-                .andExpect(jsonPath("fullname").value(customer.getFullname()))
-                .andExpect(jsonPath("age").value(customer.getAge()))
-                .andExpect(jsonPath("gender").value(customer.getGender()))
-                .andExpect(jsonPath("birthDate").value(customer.getBirthDate().toString()))
-                .andExpect(jsonPath("cityLive.name").value(customer.getCityLive().getName()));
+                .andExpect(status().isOk())
+                .andExpect( jsonPath("content", hasSize(1)) )
+                .andExpect( jsonPath("totalElements").value(1) )
+                .andExpect( jsonPath( "pageable.pageSize" ).value(100) )
+                .andExpect( jsonPath( "pageable.pageNumber" ).value(0) );
     }
 
     @Test
-    @DisplayName("Deve retornar 404 quando não encontrar um usuario pelo nome")
+    @DisplayName("Deve retornar 0 elementos quando não encontrar um usuario pelo nome")
     public void notFoundUserWhenSearchByNameTest() throws Exception {
         final String name = "Fulano";
 
-        BDDMockito.when(customerService.searchByName(name)).thenReturn(Optional.empty());
+        BDDMockito.when(customerService.searchByName(Mockito.any(Customer.class), Mockito.any(Pageable.class)))
+                .thenReturn(new PageImpl<Customer>(Collections.emptyList(), PageRequest.of(0,100), 0));
 
-        final String query = String.format("?name=%s", name);
+        final String query = String.format("?name=%s&page=0&size=100", name);
 
         MockHttpServletRequestBuilder request = makeGetMockHttpServletRequestBuilder(query);
 
         mvc.perform(request)
-                .andExpect(status().isNotFound());
+                .andExpect(status().isOk())
+                .andExpect( jsonPath("content", hasSize(0)) )
+                .andExpect( jsonPath("totalElements").value(0) )
+                .andExpect( jsonPath( "pageable.pageSize" ).value(100) )
+                .andExpect( jsonPath( "pageable.pageNumber" ).value(0) );
     }
 
     @Test
@@ -153,20 +174,20 @@ public class CustomerControllerTest {
     public void updateUserNameTest() throws Exception {
         final Long id = 1L;
 
-        final Customer customer = makeNewCustomer();
-        customer.setFullname("João Santos");
+        final Customer customerFound = makeNewCustomer();
+        final Customer customerUpdated = Customer.builder().fullname("João Santos").build();
 
         final CustomerUpdateDTO customerUpdateDTO = CustomerUpdateDTO.builder().fullname("João Santos").build();
-
         final String json = new ObjectMapper().writeValueAsString(customerUpdateDTO);
 
-        BDDMockito.when(customerService.update(Mockito.any(Customer.class))).thenReturn(Optional.of(customer));
+        BDDMockito.when(customerService.findById(id)).thenReturn(Optional.of(customerFound));
+        BDDMockito.when(customerService.update(Mockito.any(Customer.class))).thenReturn(customerUpdated);
 
         MockHttpServletRequestBuilder request = makePatchMockHttpServletRequestBuilder(id, json);
 
         mvc.perform(request)
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("fullname").value(customer.getFullname()));
+                .andExpect(jsonPath("fullname").value(customerUpdated.getFullname()));
     }
 
     @Test
@@ -178,7 +199,7 @@ public class CustomerControllerTest {
 
         final String json = new ObjectMapper().writeValueAsString(customerUpdateDTO);
 
-        BDDMockito.when(customerService.update(Mockito.any(Customer.class))).thenReturn(Optional.empty());
+        BDDMockito.when(customerService.update(Mockito.any(Customer.class))).thenReturn(null);
 
         MockHttpServletRequestBuilder request = makePatchMockHttpServletRequestBuilder(id, json);
 
