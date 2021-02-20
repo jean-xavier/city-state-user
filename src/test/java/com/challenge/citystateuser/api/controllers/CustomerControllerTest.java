@@ -147,7 +147,7 @@ public class CustomerControllerTest {
         MockHttpServletRequestBuilder request = makeGetMockHttpServletRequestBuilder("/1");
 
         mvc.perform(request)
-                .andExpect(status().isFound())
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("id").value(1L))
                 .andExpect(jsonPath("fullname").value(customer.getFullname()))
                 .andExpect(jsonPath("age").value(customer.getAge()))
