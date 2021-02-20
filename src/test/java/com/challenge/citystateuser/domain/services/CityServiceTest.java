@@ -4,6 +4,7 @@ import com.challenge.citystateuser.domain.exceptions.BusinessException;
 import com.challenge.citystateuser.domain.models.entities.City;
 import com.challenge.citystateuser.domain.models.entities.State;
 import com.challenge.citystateuser.domain.models.repositories.CityRepository;
+import com.challenge.citystateuser.domain.models.repositories.StateRespository;
 import com.challenge.citystateuser.domain.services.impl.CityServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -11,9 +12,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.Example;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,18 +35,22 @@ public class CityServiceTest {
     @MockBean
     CityRepository cityRepository;
 
+    @MockBean
+    StateRespository stateRespository;
+
     @BeforeEach
     public void setUp() {
-        this.cityService = new CityServiceImpl(cityRepository);
+        this.cityService = new CityServiceImpl(cityRepository, stateRespository);
     }
 
     @Test
     @DisplayName("Deve salvar uma cidade")
     public void saveCityTest() {
-        City city = City.builder().name("Salvador").state(State.builder().id(1L).build()).build();
+        State state = State.builder().id(1L).build();
+        City city = City.builder().name("Salvador").state(state).build();
         City mock = City.builder().id(1L).name("Salvador").state(State.builder().id(1L).name("Bahia").build()).build();
 
-        Mockito.when(cityRepository.existsByName(city.getName())).thenReturn(false);
+        Mockito.when(stateRespository.findById(Mockito.any())).thenReturn(Optional.of(state));
         Mockito.when(cityRepository.save(city)).thenReturn(mock);
 
         City savedCity = cityService.save(city);
@@ -51,17 +62,17 @@ public class CityServiceTest {
     }
 
     @Test
-    @DisplayName("Deve lançar erro de negocio ao tentar salvar uma cidade existente.")
+    @DisplayName("Deve lançar erro ao adicionar um cidade com um state inexistente.")
     public void shouldNotSaveExistsCityTest() {
         final City city = City.builder().name("Salvador").state(State.builder().id(1L).build()).build();
 
-        Mockito.when(cityRepository.existsByName(city.getName())).thenReturn(true);
+        Mockito.when(stateRespository.findById(Mockito.any())).thenReturn(Optional.empty());
 
         Throwable exception = catchThrowable(() -> cityService.save(city));
 
         assertThat(exception)
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("City already exists");
+                .hasMessage("State not found");
 
         Mockito.verify(cityRepository, Mockito.never()).save(city);
     }
@@ -69,27 +80,19 @@ public class CityServiceTest {
     @Test
     @DisplayName("Deve encontrar um cidade pelo nome")
     public void findCityByNameTest() {
-        String name = "Salvador";
-        City mock = City.builder().id(1L).name("Salvador").state(State.builder().id(1L).name("Bahia").build()).build();
+        final City city = City.builder().id(1L).name("Salvador").build();
+        final PageRequest pageRequest = PageRequest.of(0, 10);
 
-        Mockito.when(cityRepository.findByName(name)).thenReturn(Optional.of(mock));
+        List<City> cities = Collections.singletonList(city);
+        Page<City> pages = new PageImpl<>(cities, pageRequest, 1);
 
-        City city = cityService.findByName(name).get();
+        Mockito.when(cityRepository.findAll(Mockito.any(Example.class), Mockito.any(PageRequest.class))).thenReturn(pages);
 
-        assertThat(city.getName()).isEqualTo(mock.getName());
-        assertThat(city.getId()).isEqualTo(mock.getId());
-        assertThat(city.getState()).isEqualTo(mock.getState());
-    }
+        Page<City> citiesFound = cityService.findByName(city, pageRequest);
 
-    @Test
-    @DisplayName("Deve retornar empty quando não encontrar uma cidade pelo nome")
-    public void notFindCityByNameTest() {
-        String name = "Salvador";
-
-        Mockito.when(cityRepository.findByName(name)).thenReturn(Optional.empty());
-
-        Optional<City> city = cityService.findByName(name);
-
-        assertThat(city.isPresent()).isFalse();
+        assertThat(citiesFound.getTotalElements()).isEqualTo(1);
+        assertThat(citiesFound.getContent()).isEqualTo(cities);
+        assertThat(citiesFound.getPageable().getPageNumber()).isEqualTo(0);
+        assertThat(citiesFound.getPageable().getPageSize()).isEqualTo(10);
     }
 }
