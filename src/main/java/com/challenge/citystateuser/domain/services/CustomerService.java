@@ -1,6 +1,8 @@
 package com.challenge.citystateuser.domain.services;
 
 import com.challenge.citystateuser.domain.models.entities.Customer;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -9,11 +11,11 @@ import java.util.Optional;
 public interface CustomerService {
     Customer save(Customer customer);
 
-    Optional<Customer> searchByName(String fullname);
+    Page<Customer> searchByName(Customer customer, Pageable pageable);
 
     Optional<Customer> findById(Long id);
 
-    Optional<Customer> update(Customer customer);
+    Customer update(Customer customer);
 
     void delete(Customer customer);
 }
