@@ -1,15 +1,20 @@
 package com.challenge.citystateuser.api.controllers;
 
 import com.challenge.citystateuser.api.dto.CityDTO;
+import com.challenge.citystateuser.api.dto.FilterCityDTO;
 import com.challenge.citystateuser.domain.models.entities.City;
+import com.challenge.citystateuser.domain.models.entities.State;
 import com.challenge.citystateuser.domain.services.CityService;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import javax.validation.Valid;
-import javax.validation.constraints.NotBlank;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("api/cities")
@@ -34,10 +39,16 @@ public class CityController {
     }
 
     @GetMapping
-    @ResponseStatus(HttpStatus.FOUND)
-    public CityDTO find(@RequestParam("name") String name) {
-        return cityService.findByName(name)
-                .map(city -> modelMapper.map(city, CityDTO.class))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "City not found by " + name));
+    public Page<CityDTO> find(@Valid FilterCityDTO filterCityDTO, Pageable pageable) {
+        final State state = State.builder().name(filterCityDTO.getState()).build();
+        final City city = City.builder().name(filterCityDTO.getCity()).state(state).build();
+
+        Page<City> cities = cityService.findByName(city, pageable);
+
+        List<CityDTO> cityDTOS = cities.getContent().stream()
+                .map(entity -> modelMapper.map(entity, CityDTO.class))
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(cityDTOS, pageable, cityDTOS.size());
     }
 }
