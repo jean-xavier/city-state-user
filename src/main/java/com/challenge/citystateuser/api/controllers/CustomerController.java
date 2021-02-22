@@ -62,13 +62,12 @@ public class CustomerController {
 
     @PatchMapping("/{id}")
     public CustomerDTO update(@PathVariable Long id, @RequestBody @Valid CustomerUpdateDTO dto) {
-        Customer customer = customerService.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-
-        customer.setFullname(dto.getFullname());
-        customerService.update(customer);
-
-        return modelMapper.map(customer, CustomerDTO.class);
+        return customerService.findById(id)
+                .map(customer -> {
+                    customer.setFullname(dto.getFullname());
+                    customer = customerService.update(customer);
+                    return modelMapper.map(customer, CustomerDTO.class);
+                }).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @DeleteMapping("/{id}")
